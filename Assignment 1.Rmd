@@ -257,7 +257,7 @@ pie_chart <- ggplot (IL_tracts, aes (x=1, fill = majority_inc)) +
 pie_chart
 ```
 
-#Plot 9
+# Plot 9
 #### Pie Chart of Bachelor's Degree attainment by Race/Ethnicity
 
 ```{r}
