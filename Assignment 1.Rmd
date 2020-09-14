@@ -285,3 +285,4 @@ ggplot(IL_tracts, aes(x=pct_rent_occ)) +
                      labels = paste(seq(0, 100, by = 10), "%", sep = "")) +
   theme_classic()
 ```
+   
