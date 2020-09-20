@@ -1,0 +1,127 @@
+---
+title: "Assignment 2"
+author: "Rogelio Cadena"
+date: "9/20/2020"
+output: 
+  html_document:
+    theme: cosmo
+    toc: true
+    toc_depth: 3
+    toc_float: true
+---
+
+```{r load libraries, results = "hide", message = FALSE, warning = FALSE}
+library(ggplot2)
+library(sf)
+library(rnaturalearth)
+library(tidyverse)
+library(ggspatial)
+library(cartogram)
+library(ggthemes)
+```
+
+## Mapping India
+#### I am plotting India because I have great appreciation for the people and culture
+```{r message=FALSE}
+india_states <- ne_states(country = "India", returnclass = "sf")
+india_map <- ggplot(india_states) +
+  geom_sf() +
+  theme_bw()
+india_map +
+  annotation_scale()
+```
+
+## Projections
+```{r}
+India_Albers <- "+proj=aea +lat_1=28 +lat_2=12 +lat_0=20 +lon_0=78 +x_0=2000000 +y_0=2000000 +ellps=WGS84 +datum=WGS84 +units=m +no_defs"
+India_EastNAD83 <- "+proj=tmerc +lat_0=37.5 +lon_0=-85.66666666666667 +k=0.999966667 +x_0=99999.99989839978 +y_0=249364.9987299975 +ellps=GRS80 +datum=NAD83 +to_meter=0.3048006096012192 +no_defs"
+India_GoogleM <- "+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext  +no_defs"
+```
+
+## The India Albers Equal Area Projection
+```{r}
+ggplot(india_states) +
+  geom_sf() +
+  coord_sf(crs = India_Albers) +
+  theme_wsj()
+```
+
+## The NAD83 India East (ftUS) Projection
+```{r}
+ggplot(india_states) +
+  geom_sf() +
+  coord_sf(crs = India_EastNAD83) +
+  theme_wsj()
+```
+
+## The Google Mercator India Projection
+```{r}
+ggplot(india_states) +
+  geom_sf() +
+  coord_sf(crs = India_GoogleM) +
+  theme_wsj()
+```
+
+## Transforming data in a projected coordinate system
+```{r}
+states_transformed <- india_states %>%
+  st_transform(crs = India_Albers)
+```
+
+## Representing Covid-19 cases in India by state
+```{r}
+covid_ind <- read.csv("india_covid_19_state_wise_info1.csv")
+
+covid_states<- states_transformed %>% 
+  left_join(covid_ind, by = c("name" = "state_ut")) %>%
+  select(confirmed_cases, active_cases, recovered_cases, death_cases)
+```
+
+## Cloropeth Map
+```{r}
+ggplot(covid_states, aes(fill = confirmed_cases)) +
+  geom_sf(color = NA) +
+  scale_fill_viridis_c(
+    name = "Number of\nconfirmed\nCOVID-19\ncases as of\nMay 29, 2020",
+    breaks = seq(10000, 70000, by = 10000),
+    labels = formatC(seq(10000, 70000, by = 10000), 
+                     big.mark = ",", format = "f", digits = 0)) +
+  theme_void() +
+  theme(legend.background = element_blank())
+```
+
+### Continuous Cartogram
+```{r, message=FALSE, warning=FALSE}
+covid_cartogram_ncont <- covid_states %>%
+  cartogram_cont("confirmed_cases")
+ggplot(covid_cartogram_ncont, aes(fill = confirmed_cases)) +
+  geom_sf(color = NA) +
+  scale_fill_viridis_c(
+    name = "Number of\nconfirmed\nCOVID-19 cases\nas of May 29, 2020",
+    breaks = seq(10000, 70000, by = 10000),
+    labels = formatC(seq(10000, 70000, by = 10000), 
+                     big.mark = ",", format = "f", digits = 0)) +
+  theme_void() +
+  theme(legend.background = element_blank())
+```
+
+## Proportional Symbol Map
+```{r, message = FALSE, warning=FALSE}
+covid_centroids <- covid_states %>%
+  st_centroid()
+ggplot(states_transformed) +
+  geom_sf(fill = NA, color = "gray") +
+  geom_sf(data = covid_centroids, 
+          aes(size = confirmed_cases),
+          alpha = 0.65, color = "pink") +
+  
+  scale_size_continuous(
+    name = "Number of confirmed\nCOVID-19 cases\nas of May 29, 2020",
+    breaks = seq(10000, 70000, by = 10000),
+    labels = formatC(seq(10000, 70000, by = 10000),  
+                     big.mark = ",", format = "f", digits = 0),
+    range = c(0, 10)) +
+  theme_tufte() +
+  theme(legend.background = element_blank())
+```
+
