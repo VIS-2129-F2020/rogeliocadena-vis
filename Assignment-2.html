@@ -1591,8 +1591,8 @@ India_GoogleM &lt;- &quot;+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.
 </div>
 <div id="representing-covid-19-cases-in-india-by-state" class="section level2">
 <h2>Representing Covid-19 cases in India by state</h2>
-<div id="the-dataset-for-civid-cases-in-india-was-acquired-through-data.world-and-originally-is-sourced-from-the-ministry-of-health-family-welfare-in-india" class="section level4">
-<h4>The dataset for Civid cases in India was acquired through data.world and originally is sourced from the Ministry of Health &amp; Family Welfare in India</h4>
+<div id="the-dataset-for-covid-cases-in-india-was-acquired-through-data.world-and-originally-is-sourced-from-the-ministry-of-health-family-welfare-in-india" class="section level4">
+<h4>The dataset for Covid cases in India was acquired through data.world and originally is sourced from the Ministry of Health &amp; Family Welfare in India</h4>
 <pre class="r"><code>covid_ind &lt;- read.csv(&quot;india_covid_19_state_wise_info1.csv&quot;)
 
 covid_states&lt;- states_transformed %&gt;% 
@@ -1602,8 +1602,8 @@ covid_states&lt;- states_transformed %&gt;%
 </div>
 <div id="cloropeth-map" class="section level2">
 <h2>Cloropeth Map</h2>
-<div id="this-map-highlights-states-in-the-country-with-the-highest-to-lowest-confirmed-cases-of-covid-cases-from-a-range-of-100000---70000-cases" class="section level4">
-<h4>This map highlights states in the country with the highest to lowest confirmed cases of Covid cases from a range of 10,0000 - 70,000 cases</h4>
+<div id="this-map-highlights-states-in-the-country-with-the-highest-to-lowest-confirmed-cases-of-covid-cases-from-a-range-of-700000---10000-cases" class="section level4">
+<h4>This map highlights states in the country with the highest to lowest confirmed cases of Covid cases from a range of 70,0000 - 10,000 cases</h4>
 <pre class="r"><code>ggplot(covid_states, aes(fill = confirmed_cases)) +
   geom_sf(color = NA) +
   scale_fill_viridis_c(

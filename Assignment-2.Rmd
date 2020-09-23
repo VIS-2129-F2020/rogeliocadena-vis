@@ -69,7 +69,7 @@ states_transformed <- india_states %>%
 ```
 
 ## Representing Covid-19 cases in India by state
-#### The dataset for Civid cases in India was acquired through data.world and originally is sourced from the Ministry of Health & Family Welfare in India
+#### The dataset for Covid cases in India was acquired through data.world and originally is sourced from the Ministry of Health & Family Welfare in India
 ```{r}
 covid_ind <- read.csv("india_covid_19_state_wise_info1.csv")
 
@@ -79,7 +79,7 @@ covid_states<- states_transformed %>%
 ```
 
 ## Cloropeth Map
-#### This map highlights states in the country with the highest to lowest confirmed cases of Covid cases from a range of 10,0000 - 70,000 cases
+#### This map highlights states in the country with the highest to lowest confirmed cases of Covid cases from a range of 70,0000 - 10,000 cases
 ```{r}
 ggplot(covid_states, aes(fill = confirmed_cases)) +
   geom_sf(color = NA) +
