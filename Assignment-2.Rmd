@@ -69,6 +69,7 @@ states_transformed <- india_states %>%
 ```
 
 ## Representing Covid-19 cases in India by state
+#### The dataset for Civid cases in India was acquired through data.world and originally is sourced from the Ministry of Health & Family Welfare in India
 ```{r}
 covid_ind <- read.csv("india_covid_19_state_wise_info1.csv")
 
@@ -78,6 +79,7 @@ covid_states<- states_transformed %>%
 ```
 
 ## Cloropeth Map
+#### This map highlights states in the country with the highest to lowest confirmed cases of Covid cases from a range of 10,0000 - 70,000 cases
 ```{r}
 ggplot(covid_states, aes(fill = confirmed_cases)) +
   geom_sf(color = NA) +
@@ -91,6 +93,7 @@ ggplot(covid_states, aes(fill = confirmed_cases)) +
 ```
 
 ### Continuous Cartogram
+#### This map distorts state sizes according to their relative number of Covid- 19 cases. For example, the state Maharashstra (colored in yellow), is represented much large than its actual size due to the number of confirmed cases being the highest in the country.
 ```{r, message=FALSE, warning=FALSE}
 covid_cartogram_ncont <- covid_states %>%
   cartogram_cont("confirmed_cases")
@@ -106,6 +109,7 @@ ggplot(covid_cartogram_ncont, aes(fill = confirmed_cases)) +
 ```
 
 ## Proportional Symbol Map
+#### This same reading can also be depicted as circular symbols where the various sizes relate to the number of confirmed cases.
 ```{r, message = FALSE, warning=FALSE}
 covid_centroids <- covid_states %>%
   st_centroid()
