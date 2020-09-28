@@ -254,7 +254,8 @@ n_parks_bus_stops
 ```{r}
 n_bus_stops <- nrow(bus_stops)
 n_parks <- nrow(parks)
-pct_parks_bus_stops <- n_bus_stops/n_parks
+pct_bus_stops_parks <- n_bus_stops/n_parks
+pct_bus_stops_parks
 ```
 
 
@@ -278,9 +279,9 @@ ggplot(parks) +
            label = paste("Of the ", 
                          prettyNum(n_bus_stops, big.mark = ","),
                          "bus stops in Chicago\n", 
-                         prettyNum(n_bus_stops*pct_parks_bus_stops, big.mark = ","),
+                         prettyNum(n_parks_bus_stops, big.mark = ","),
                          " (", 
-                         prettyNum(100*pct_parks_bus_stops, digits = 0),
+                         prettyNum(pct_bus_stops_parks, digits = 0),
                          "%) are within 400\nmeters of parks.",
                          sep = ""),
            hjust = 0, vjust = .6, size = 3) +
