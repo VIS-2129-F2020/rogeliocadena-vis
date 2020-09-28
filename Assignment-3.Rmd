@@ -4,13 +4,14 @@ author: "Rogelio Cadena"
 date: "9/27/2020"
 output: 
   html_document:
-  theme: cosmo
+  code_folding: hide
+  theme: united
 toc: true
 toc_depth: 3
 toc_float: true
 ---
 
-```{r message=FALSE}
+```{r, results='hide', message=FALSE}
 library(sf)
 library(tidyverse)
 library(ggthemes)
@@ -21,7 +22,7 @@ library(ggplot2)
 ```
 
 # Loading the Data
-#### I have chosen to use four datasets (2 polygons and 2 points) showing neighborhoods, parks, grocery stores and cta bus stops
+#### I have chosen to use four datasets (2 polygons and 2 points) showing neighborhoods, parks, cta bus stops, murals from Chicago's open city data base
 ```{r}
 nhoods <- st_read("https://data.cityofchicago.org/api/geospatial/bbvz-uum9?method=export&format=KML", 
                   quiet = TRUE)
@@ -34,10 +35,13 @@ mural <- st_read("https://data.cityofchicago.org/api/geospatial/we8h-apcf?method
 
 bus_stops <- st_read("CTA_BusStops.kml", 
                   quiet = TRUE)
+
+CBD <- st_read("https://data.cityofchicago.org/api/geospatial/tksj-nvsw?method=export&format=KML",
+                  quiet = TRUE)
 ```
 
 # Transforming the data
-#### I've transformed the data to the NAD 1983 East Illinois State Plane FIPS 1201 Feet 
+#### I've transformed the data to the NAD 1983 East Illinois State Plane System
 ```{r}
 IL_state_plane <- "+proj=tmerc +lat_0=36.66666666666666 +lon_0=-88.33333333333333 +k=0.9999749999999999 +x_0=300000 +y_0=0 +ellps=GRS80 +datum=NAD83 +to_meter=0.3048006096012192 +no_defs"
 
@@ -52,21 +56,24 @@ mural <- mural %>%
 
 bus_stops <- bus_stops %>%
   st_transform(IL_state_plane)
+
+CBD <- CBD %>%
+  st_transform(IL_state_plane)
 ```
 
-# Creating a buffer
-#### I've transformed the data to the NAD 1983 East Illinois State Plane System 
+# All data
 ```{r}
 ggplot(bus_stops) +
-  geom_sf(color = "blue", size= 0.01) +
-  geom_sf(data = mural, color = "orange", size = 0.05) +
+  geom_sf(color = "lightblue2", size= 0.005) +
+  geom_sf(data = mural, color = "orange2", size = 0.05) +
   geom_sf(data = parks, color = "darkgreen") +
-  geom_sf(data = nhoods, color= "gray", fill= NA) +
+  geom_sf(data = nhoods, color= "gray", fill= "dimgray", alpha=0.001) +
   theme_map() +
   annotation_scale()
+
 ```
 
-# 1 Counting Points in a Polygon
+# Map 1
 #### The number and proportion of A points (Bus Stops) within C polygons (Neighborhoods)
 ```{r}
 nhoods <- nhoods %>%
@@ -87,31 +94,46 @@ theme_map() +
                                          color = "gray"))
 ```
 
-# 2 Counting Points in a Polygon
+# Map 2
 #### The average number of A points (Bus Stops) within C polygons (Neighborhoods)
-```{r}
+##### Note: I chose to zoom into the map up to the CBD in order to understand where the largest density of bus stops was coming from. As you can see, it was discovered that the Cabrini-Green neighborhood has the highest bus stop density but this is deceiving as its area is quite small relative to other neighborhoods.
+```{r message=FALSE} 
+bb <- st_bbox(CBD)
+left_side <- st_bbox(CBD)$xmin
+top_side <- st_bbox(CBD)$ymax
+
+
 nhoods <- nhoods %>%
   mutate(area = set_units(st_area(nhoods), km^2)) %>%
   mutate(bus_stops_dens = as.numeric(num_bus_stops / area))
 
 ggplot(nhoods) +
-  geom_sf(color = NA,
+  geom_sf(color = "gray",
           aes(fill = bus_stops_dens)) +
   scale_fill_viridis_c(name = 
                          "Chicago neighborhoods\nby Bus Stop Density",
-                       breaks = breaks <- seq(1, 250, by = 25),
+                       breaks = breaks <- seq(0, 250, by = 50),
                        labels = paste(prettyNum(breaks, big.mark = ","),
                                       "bus stops per square km")) +
-  annotation_scale(location = "br") +
-  annotation_north_arrow(location = "tr",
+  annotation_scale(location = "tr") +
+  annotation_north_arrow(location = "br",
                          style = north_arrow_minimal()) +
-  labs(title = "Density of Bus Stops in Chicago Neighborhoods") +
+  labs(title = "Density of Bus Stops in Chicago's Central Business District") +
   theme_map() +
-    theme(legend.background = element_rect(fill=alpha("white", 0.5), color = "gray"))
+    theme(legend.position = "right",
+          legend.background = element_rect(fill=alpha("white", 0.5), color = "gray")) +
+  
+   scale_fill_gradientn(colors = c("red2", "yellow2", "dark green"),na.value = "grey50") +
+   labs(fill="Density of Bus stops \n(per Km)") +
+  
+  xlim(c(bb[1],bb[3])) + 
+  ylim(c(bb[2], bb[4]))
+
 ```
 
 
-# 3 Counting Points in a Polygon
+
+# Map 3
 #### The number and proportion of B points (Murals) within C polygons (Neighborhoods)
 ```{r message=FALSE}
 nhoods <- nhoods %>%
@@ -129,10 +151,10 @@ ggplot(nhoods) +
                          style = north_arrow_minimal()) +
 theme_map() +
   theme(legend.background = element_rect(fill = alpha("white", 0.5), 
-                                         color = "gray"))
+                                         color = "gray")) 
 ```
 
-# 4 Identifying overlapping polygons
+# Map 4
 #### The number and proportion of C polygons (Neighborhoods) that overlap with D polygons (Parks)
 ```{r}
 nhoods <- nhoods %>%
@@ -148,11 +170,11 @@ left_side  <- st_bbox(parks)$xmin
 top_side <- st_bbox(parks)$ymax
 
 ggplot(parks) +
-  geom_sf(fill = "darkgreen", color = NA) +
+  geom_sf(fill = "lightblue", color = NA) +
   geom_sf(data = nhoods,
           aes(fill = has_parks)) +
-  scale_fill_manual(values = c("cornsilk1", "darkgreen"),
-          name = "Chicago Neighborhoods\nby presence of a park", 
+  scale_fill_manual(values = c("white", "lightblue"),
+          name = "Chicago neighborhoods\nby presence of a park", 
           labels = c("Neighborhood without\nan overlapping park",
                      "Neighborhood with an\noverlapping park")) +
   annotation_scale(location = "br") +
@@ -165,17 +187,18 @@ ggplot(parks) +
                          length(nhoods$Name),
                          "neighborhoods contain\nor overlap with", 
                          "a park."),
-           hjust = 0.4, vjust = 0.3, size = 3) +
+           hjust = 0.4, vjust = 0.07, size = 3) +
   theme_map() +
-  theme(panel.background = element_rect(fill = "gray"),
+  theme(panel.background = element_rect(fill = "lightgray"),
         legend.background = element_rect(fill = alpha("white", 0.5), 
-                                         color = "gray"))
+                                         color = "lightgray")) +
+  theme_void()
 ```
 
 
-# 5 Counting Polygon in a Polygon
+# Map 5
 #### The number and proportion of D polygons (Parks) that overlap with  C polygons (Neighborhoods)
-```{r message=FALSE}
+```{r, echo=TRUE, message=FALSE}
 nhoods <- nhoods %>%
   mutate(num_parks = lengths(st_covers(nhoods, parks)))
 
@@ -186,17 +209,21 @@ ggplot(nhoods) +
                        breaks = breaks <- seq(0, 20, by =5),
                        labels = paste(prettyNum(breaks, big.mark = ","),
                                       "parks")) +
-  annotation_scale(location = "br") +
+  annotation_scale(location = "bl") +
   annotation_north_arrow(location = "tr",
                          style = north_arrow_minimal()) +
 theme_map() +
   theme(legend.background = element_rect(fill = alpha("white", 0.5), 
-                                         color = "gray"))
+                                         color = "gray")) +
+  scale_fill_gradientn(colors = c("red", "yellow", "green"),na.value = "grey50") +
+  labs(fill="Number of parks") +
+  theme_bw()
 ```
 
-# 6 Subsetting points within a polygon
-#### The number and proportion of B points (murals) with a specified distance of D polygons (parks)
-```{r}
+# Map 6
+#### The number and proportion of A points (bus stops) with a specified distance of D polygons (parks)
+##### To note: I decided to create this metric as I felt it can produce a more valuable outcome. I gave a distance of 400m roughly .25 mile from edge of park as the maximum distance someone is willing to walk to a park from a bus stop. This is especially useful to understand if demographics with no access to cars might reach parks. This could also be applied to CTA train stops.
+```{r, fig.show= 'hide'}
 parks_buffer <- st_buffer(parks, dist = 400) %>%
   st_union()
 
@@ -224,6 +251,11 @@ n_parks_bus_stops <- sum(bus_stops$by_parks)
 
 n_parks_bus_stops
 ```
+```{r}
+n_bus_stops <- nrow(bus_stops)
+n_parks <- nrow(parks)
+pct_parks_bus_stops <- n_bus_stops/n_parks
+```
 
 
 ```{r message=FALSE}
@@ -232,9 +264,9 @@ top_side <- st_bbox(bus_stops)$ymax
 
 ggplot(parks) +
   geom_sf(fill = "darkgreen", color = NA) +
-  geom_sf(data = bus_stops, size = 0.01,
+  geom_sf(data = bus_stops, size = 0.005,
           aes(color = by_parks)) +
-  scale_color_manual(values = c("lightblue", "darkblue"),
+  scale_color_manual(values = c("orange2", "darkblue"),
           name = "Chicago bus stops\nby distance to parks", 
           labels = c("No bus stop within 400 m",
                      "Bus stops within 400 m")) +
@@ -246,14 +278,15 @@ ggplot(parks) +
            label = paste("Of the ", 
                          prettyNum(n_bus_stops, big.mark = ","),
                          "bus stops in Chicago\n", 
-                         prettyNum(n_bus_stops, big.mark = ","),
+                         prettyNum(n_bus_stops*pct_parks_bus_stops, big.mark = ","),
                          " (", 
                          prettyNum(100*pct_parks_bus_stops, digits = 0),
                          "%) are within 400\nmeters of parks.",
                          sep = ""),
            hjust = 0, vjust = .6, size = 3) +
   theme_map() +
-  theme(panel.background = element_rect(fill = "cornsilk1"),
+  theme(panel.background = element_rect(fill = "beige", color = NA),
         legend.background = element_rect(fill = alpha("white", 0.5), 
                                          color = "gray"))
 ```
+
