@@ -70,4 +70,21 @@ otp_setup(otp = path_otp, dir = path_data, memory =1024)
 otpcon <- otp_connect()
 ```
 
+```{r}
+iso_5min_walk <- 
+  otp_isochrone(otpcon = otpcon, fromPlace = CPL_libraries, 
+                mode = "WALK", cutoffSec = 300) %>%
+  st_transform(crs = MA_state_plane) %>%
+  mutate(mode = "walk")
+
+iso_5min_drive <- 
+  otp_isochrone(otpcon = otpcon, fromPlace = CPL_libraries, 
+                mode = "CAR", cutoffSec = 300) %>%
+  st_transform(crs = MA_state_plane) %>%
+  mutate(mode = "drive")
+
+iso_all_modes <- rbind(iso_5min_drive, iso_5min_walk)
+
+otp_stop()
+```
 
