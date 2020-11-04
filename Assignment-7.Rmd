@@ -1,0 +1,160 @@
+---
+title: "Assigntment-7"
+author: "Rogelio Cadena"
+date: "11/1/2020"
+output: 
+  html_document:
+    theme: cosmo
+    toc: true
+    toc_depth: 3
+    toc_float: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(sf)
+library(leaflet)
+library(htmltools)
+library(htmlwidgets)
+library(raster)
+library(gstat)
+library(spatial)
+```
+
+# Create Map of Philadelphia Neighborhoods
+```{r, message=FALSE, warning=FALSE}
+philly_nhoods <- st_read("neighborhoods_philadelphia.geojson", quiet = TRUE) %>%
+  slice(74, 152, 151, 123, 14, 124, 50, 9, 31, 82)
+
+leaflet(philly_nhoods) %>%
+  addProviderTiles(providers$Stamen.TonerLite) %>%
+  addPolygons(highlightOptions = highlightOptions(fillColor = "yellow", 
+                                                  fillOpacity = 1),
+              label = ~name, 
+              weight = 1) 
+
+  
+```
+
+# Read file of demolitions
+```{r, message=FALSE, warning=FALSE}
+philly_demo <-st_read("demolitions.geojson")
+```
+
+# Calculating demolitions per neighborhood 
+
+```{r, message=FALSE, warning=FALSE}
+philly_nhoods %>% 
+  st_join(philly_demo) %>% 
+  group_by(name) %>% 
+  summarize(count=n()) %>% 
+  ungroup()
+```
+
+
+# Map 1: Chloropleth
+
+```{r, message=FALSE, warning=FALSE}
+philly_nhoods<- philly_nhoods %>%
+  mutate(demos = c(404,1,27,179,48,496,140,30,614,674))
+         
+         philly_nhoods$label <- 
+  paste(philly_nhoods$name, "<br>", 
+        philly_nhoods$demos, "demolitions per neighborhood") %>% 
+  lapply(htmltools::HTML)
+
+bins <- seq(min(philly_nhoods$demos),
+            max(philly_nhoods$demos), by = 1)
+pal <- colorNumeric("plasma", 
+                    domain = philly_nhoods$demolitions,
+                    na.color = "#00000000")
+leaflet(philly_nhoods) %>%
+  addProviderTiles(providers$Stamen.TonerLite) %>%
+  addPolygons(highlightOptions = highlightOptions(fillOpacity = 1),
+              label = ~label,
+              fillColor = ~pal(demos),
+              weight = 1, color = "black") %>% 
+  addLegend(pal = pal, 
+            values = ~demos,
+            bins = 3,
+            opacity = 0.7, title = "Demolitions",
+            position = "topright")
+```
+
+# Map 2: Demolitions as points using centroids 
+
+```{r, message=FALSE, warning=FALSE}
+PA_state_plane <- "+proj=lcc +lat_1=40.96666666666667 +lat_2=39.93333333333333 +lat_0=39.33333333333334 +lon_0=-77.75 +x_0=600000 +y_0=0 +ellps=GRS80 +datum=NAD83 +to_meter=0.3048006096012192 +no_defs "
+WGS84 <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
+nhood_points <- st_centroid(
+  st_transform(philly_nhoods, crs = PA_state_plane)) %>%
+  st_transform(WGS84)
+leaflet(nhood_points) %>%
+  addProviderTiles(providers$Stamen.TonerLite) %>%
+  addCircles(label = ~label,
+             fillColor = ~pal(demos),
+             stroke = FALSE, 
+             radius = 50, 
+             fillOpacity = 1) %>% 
+  addLegend(pal = pal, 
+            values = ~demos,
+            bins = 3,
+            opacity = 0.7, title = "Demolitions",
+            position = "topright")
+```
+
+# Map 3: Continous Surface
+
+```{r, message=FALSE, warning=FALSE}
+nhood_pts_sp <- nhood_points %>%
+  st_transform(PA_state_plane) %>%
+  as_Spatial()
+nhood_poly_sp <- philly_nhoods %>%
+  st_transform(PA_state_plane) %>%
+  as_Spatial()
+```
+
+
+```{r, message=FALSE, warning=FALSE}
+philly_raster <- raster(nhood_poly_sp, res=10)
+```
+
+```{r, message=FALSE, warning=FALSE}
+gs <- gstat(formula=demos~1, locations=nhood_pts_sp)
+idw_interp <- interpolate(philly_raster, gs)
+idw_interp_clip <- mask(idw_interp, nhood_poly_sp)
+```
+
+```{r, message=FALSE, warning=FALSE}
+leaflet(nhood_points) %>%
+  addProviderTiles(providers$Stamen.TonerLite) %>%
+  addRasterImage(idw_interp_clip, colors = pal, opacity = 0.8) %>% 
+  addLegend(pal = pal, 
+            values = ~demos,
+            bins = 3,
+            opacity = 0.7, title = "Demolitions",
+            position = "topright")
+```
+
+# Discussions 
+
+#### a.) Most Informative 
+
+The most informative was map 3 in this case. The continuous surface illustrated variation between neighborhood boundaries while still identify an accurate color range for demolitions by neighborhood.
+
+#### b-Most Interesting
+
+The most interesting to me was map 3. The map acted as an almost a heat based map providing gradiation between neighborhoods. While the number of demolitions are not geo-located to an exact point, therefore placing all demolitions per neighborhood at the center of each polygon, the map is nonetheless interesting and with more precise data could also be the most appropiate.
+
+#### c-Most Appropriate to the Data 
+
+I would consider Map 1 to be the most appropriate. Because the number of demolitions was manually inserted, and there was a lack of geographic exactitude, map 1 distinguishes the varying demolition count by number without precisely identifying the demolition points specifically. 
+
+#### d-Best
+
+Map 1 was the best as it accurately represents the available data by neighborhood and does not speculate on exactitude of demolitions within the neighborhoods.
+
