@@ -143,7 +143,7 @@ leaflet(nhood_points) %>%
 
 # Discussions 
 
-#### a.) Most Informative 
+#### a-Most Informative 
 
 The most informative was map 3 in this case. The continuous surface illustrated variation between neighborhood boundaries while still identify an accurate color range for demolitions by neighborhood.
 
