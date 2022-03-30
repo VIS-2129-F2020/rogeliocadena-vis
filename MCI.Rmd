@@ -32,7 +32,7 @@ library(spatial)
 mexico_states <- st_read("mexican_states.geojson", quiet = TRUE) %>%
   
 
-leaflet(Mexico_Albers) %>%
+leaflet(mexico_states) %>%
   addProviderTiles(providers$Stamen.TonerLite) %>%
   addPolygons(highlightOptions = highlightOptions(fillColor = "yellow", 
                                                   fillOpacity = 1),
